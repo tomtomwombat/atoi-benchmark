@@ -1,109 +1,115 @@
+import sys
 import json
 import pathlib
 import pandas as pd
 import matplotlib.pyplot as plt
 
-plt.rcParams['font.size'] = 18
+if __name__ == "__main__":
+    arguments = sys.argv[1:]
+    num_type = arguments[0]
 
-# -------------------------
-# 1️⃣ Load Criterion results
-# -------------------------
+    plt.rcParams['font.size'] = 18
 
-criterion_dir = pathlib.Path("target/criterion")
-bench_results = []
+    # -------------------------
+    # 1️⃣ Load Criterion results
+    # -------------------------
 
-# Iterate all benchmarks, open only estimates.json
-for bench_folder in criterion_dir.glob("**/new"):
-    estimates_file = bench_folder / "estimates.json"
-    if estimates_file.exists():
-        with open(estimates_file) as f:
-            data = json.load(f)
-            # use folder name as benchmark name
-            name = bench_folder.parent.name  # <-- this is the crate-type-digits-... string
-            mean_ns = data['mean']['point_estimate'] / 1000.0
-            bench_results.append((name, mean_ns))
+    criterion_dir = pathlib.Path("target/criterion")
+    bench_results = []
 
-# -------------------------
-# 2️⃣ Parse benchmark names
-# -------------------------
+    # Iterate all benchmarks, open only estimates.json
+    for bench_folder in criterion_dir.glob("**/new"):
+        estimates_file = bench_folder / "estimates.json"
+        if num_type not in str(bench_folder):
+            continue
+        if estimates_file.exists():
+            with open(estimates_file) as f:
+                data = json.load(f)
+                # use folder name as benchmark name
+                name = bench_folder.parent.name  # <-- this is the crate-type-digits-... string
+                mean_ns = data['mean']['point_estimate'] / 1000.0
+                bench_results.append((name, mean_ns))
 
-def parse_bench_name(name):
-    """
-    Parse a benchmark name like 'cetane-u64-digits-1-to-2'
-    Returns: crate, typ, min_digit, max_digit
-    """
-    parts = name.split("-")
+    # -------------------------
+    # 2️⃣ Parse benchmark names
+    # -------------------------
 
-    # find "digits" keyword
-    try:
-        digits_idx = parts.index("digits")
-    except ValueError:
-        raise ValueError(f"Cannot find 'digits' in benchmark name: {name}")
+    def parse_bench_name(name):
+        """
+        Parse a benchmark name like 'cetane-u64-digits-1-to-2'
+        Returns: crate, typ, min_digit, max_digit
+        """
+        parts = name.split("-")
 
-    crate = "-".join(parts[:digits_idx-1])  # if crate has hyphens, join them
-    typ = parts[digits_idx-1]
-    min_digit = int(parts[digits_idx + 1])
-    # handle case "digits-5" vs "digits-1-to-5"
-    if digits_idx + 3 < len(parts) and parts[digits_idx + 2] == "to":
-        max_digit = int(parts[digits_idx + 3])
-    else:
-        max_digit = min_digit
+        # find "digits" keyword
+        try:
+            digits_idx = parts.index("digits")
+        except ValueError:
+            raise ValueError(f"Cannot find 'digits' in benchmark name: {name}")
 
-    return crate, typ, min_digit, max_digit
+        crate = "-".join(parts[:digits_idx-1])  # if crate has hyphens, join them
+        typ = parts[digits_idx-1]
+        min_digit = int(parts[digits_idx + 1])
+        # handle case "digits-5" vs "digits-1-to-5"
+        if digits_idx + 3 < len(parts) and parts[digits_idx + 2] == "to":
+            max_digit = int(parts[digits_idx + 3])
+        else:
+            max_digit = min_digit
 
-rows = []
-for name, mean_ns in bench_results:
-    # expected format: <crate>-<type>-digits-<min>-to-<max>
-    crate, typ, min_digit, max_digit = parse_bench_name(name)
-    rows.append({
-        "crate": crate,
-        "type": typ,
-        "min_digit": min_digit,
-        "max_digit": max_digit,
-        "mean_ns": mean_ns
-    })
+        return crate, typ, min_digit, max_digit
 
-df = pd.DataFrame(rows)
+    rows = []
+    for name, mean_ns in bench_results:
+        # expected format: <crate>-<type>-digits-<min>-to-<max>
+        crate, typ, min_digit, max_digit = parse_bench_name(name)
+        rows.append({
+            "crate": crate,
+            "type": typ,
+            "min_digit": min_digit,
+            "max_digit": max_digit,
+            "mean_ns": mean_ns
+        })
 
-# focus on u64 for now
-df = df[df['type'] == 'u64']
+    df = pd.DataFrame(rows)
 
-# -------------------------
-# 3️⃣ Split data: exact digits vs 1..N
-# -------------------------
-exact_digits_df = df[df['min_digit'] == df['max_digit']]
-range_digits_df = df[df['min_digit'] == 1]  # 1..N distributions
+    df = df[df['type'] == num_type]
 
-# -------------------------
-# 4️⃣ Plot exact digits (N to N)
-# -------------------------
-plt.figure(figsize=(10,6))
-for crate, group in exact_digits_df.groupby("crate"):
-    group = group.sort_values("max_digit")  # <- sort by N
-    plt.plot(group['max_digit'], group['mean_ns'], marker='o', label=crate, linewidth=2.5)
+    # -------------------------
+    # 3️⃣ Split data: exact digits vs 1..N
+    # -------------------------
+    exact_digits_df = df[df['min_digit'] == df['max_digit']]
+    range_digits_df = df[df['min_digit'] == 1]  # 1..N distributions
 
-plt.xlabel("Number of digits (exact)")
-plt.ylabel("Mean parse time (ns)")
-plt.title("u64 parser performance: exact digits N")
-plt.legend(loc='upper left')
-plt.grid(True)
-# plt.tight_layout()
-plt.ylim(bottom=0) 
-plt.show()
+    # -------------------------
+    # 4️⃣ Plot exact digits (N to N)
+    # -------------------------
+    plt.figure(figsize=(10,6))
+    for crate, group in exact_digits_df.groupby("crate"):
+        group = group.sort_values("max_digit")  # <- sort by N
+        plt.plot(group['max_digit'], group['mean_ns'], marker='o', label=crate, linewidth=2.5)
 
-# -------------------------
-# 5️⃣ Plot 1..N distributions
-# -------------------------
-plt.figure(figsize=(10,6))
-for crate, group in range_digits_df.groupby("crate"):
-    group = group.sort_values("max_digit")  # <- sort by N
-    plt.plot(group['max_digit'], group['mean_ns'], marker='o', label=crate, linewidth=2.5)
+    plt.xlabel("Number of Digits")
+    plt.ylabel("Parse Time (ns)")
+    plt.title("%s Parser Performance (Checked): Exactly N Digits" % num_type)
+    plt.legend(loc='upper left')
+    plt.grid(True)
+    # plt.tight_layout()
+    plt.ylim(bottom=0) 
+    plt.show()
 
-plt.xlabel("Number of digits (1..N)")
-plt.ylabel("Mean parse time (ns)")
-plt.title("u64 parser performance: 1..N digit range")
-plt.legend(loc='upper left')
-plt.grid(True)
-# plt.tight_layout()
-plt.ylim(bottom=0) 
-plt.show()
+    # -------------------------
+    # 5️⃣ Plot 1..N distributions
+    # -------------------------
+    plt.figure(figsize=(10,6))
+    for crate, group in range_digits_df.groupby("crate"):
+        group = group.sort_values("max_digit")  # <- sort by N
+        plt.plot(group['max_digit'], group['mean_ns'], marker='o', label=crate, linewidth=2.5)
+
+    plt.xlabel("Number of Digits [1..N]")
+    plt.ylabel("Parse Time (ns)")
+    plt.title("%s Parser Performance (Checked): [1..N] Digit Range" % num_type)
+    plt.legend(loc='upper left')
+    plt.grid(True)
+    # plt.tight_layout()
+    plt.ylim(bottom=0) 
+    plt.show()
