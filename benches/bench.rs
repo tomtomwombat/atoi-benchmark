@@ -1,5 +1,5 @@
 /// e.g.
-// cargo bench "cetane-u64-digits-1-1" -- --exact
+// cargo bench "cetane-u64-digits-1-to-1" -- --exact
 use criterion::criterion_main;
 use criterion::{Criterion, criterion_group};
 use rand::rngs::StdRng;
