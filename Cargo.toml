@@ -1,0 +1,21 @@
+[package]
+name = "atoi-benchmark"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+
+[dev-dependencies]
+
+atoi = "2.0.0"
+lexical-core = "1.0.6"
+atoi_simd = "0.17.0"
+cetane = { path = "../cetane" }
+
+itoa = "1.0.17"
+rand = "0.8.5"
+criterion = { version = "0.8.1", features = ["html_reports"] }
+
+[[bench]]
+name = "bench"
+harness = false
