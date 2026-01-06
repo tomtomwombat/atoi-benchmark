@@ -71,8 +71,8 @@ macro_rules! bench_integer_type {
             for min_digit in min_digits {
                 // Write then read numbers to disk to black box compiler
                 let vals = random_numbers(1000, min_digit..=max_digit, <$type>::MAX as u128);
-                write_numbers("data/data.txt", vals).unwrap();
-                let vals = read_numbers("data/data.txt").unwrap();
+                write_numbers("data.txt", vals).unwrap();
+                let vals = read_numbers("data.txt").unwrap();
 
                 benchmark_parser(
                     $c,
@@ -140,6 +140,7 @@ macro_rules! bench_integer_type {
 
 fn benchmark(c: &mut Criterion) {
     bench_integer_type!(c, u64);
+    bench_integer_type!(c, u32);
     bench_integer_type!(c, u8);
 }
 
