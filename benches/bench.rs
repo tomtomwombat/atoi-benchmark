@@ -139,8 +139,10 @@ macro_rules! bench_integer_type {
 }
 
 fn benchmark(c: &mut Criterion) {
+    bench_integer_type!(c, u128);
     bench_integer_type!(c, u64);
     bench_integer_type!(c, u32);
+    bench_integer_type!(c, u16);
     bench_integer_type!(c, u8);
 }
 
