@@ -19,3 +19,8 @@ criterion = { version = "0.8.1", features = ["html_reports"] }
 [[bench]]
 name = "bench"
 harness = false
+
+[profile.release]
+lto = "fat" 
+codegen-units = 1 
+opt-level = 3

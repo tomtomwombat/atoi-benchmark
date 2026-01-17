@@ -10,24 +10,38 @@ use std::ops::RangeInclusive;
 use std::fs::File;
 use std::io::{BufRead, BufReader, BufWriter, Write};
 
-pub fn random_number(rng: &mut impl Rng, digit_range: RangeInclusive<u32>, max: u128) -> String {
+pub fn random_number(
+    rng: &mut impl Rng,
+    digit_range: RangeInclusive<u32>,
+    max: u128,
+    neg: bool,
+) -> String {
     let digits = rng.gen_range(digit_range);
     let max_num = std::cmp::min(max, 10u128.pow(digits));
     let mut min_num = 10u128.pow(digits - 1);
     if digits == 1 {
         min_num = 0;
     }
-    let num = rng.gen_range(min_num..max_num);
     let mut buffer = itoa::Buffer::new();
-    let s = buffer.format(num);
+    let s = if neg {
+        let n = 2 * rng.gen_range(0..=1) - 1;
+        buffer.format(n * rng.gen_range(min_num..max_num) as i128)
+    } else {
+        buffer.format(rng.gen_range(min_num..max_num))
+    };
     s.to_owned()
 }
 
-pub fn random_numbers(num: usize, digit_range: RangeInclusive<u32>, max: u128) -> Vec<String> {
+pub fn random_numbers(
+    num: usize,
+    digit_range: RangeInclusive<u32>,
+    max: u128,
+    neg: bool,
+) -> Vec<String> {
     let mut rng = StdRng::seed_from_u64(42);
     std::iter::repeat(())
         .take(num)
-        .map(|_| random_number(&mut rng, digit_range.clone(), max))
+        .map(|_| random_number(&mut rng, digit_range.clone(), max, neg))
         .collect::<Vec<String>>()
 }
 
@@ -69,8 +83,10 @@ macro_rules! bench_integer_type {
             }
 
             for min_digit in min_digits {
+                #[allow(unused_comparisons)]
+                let neg = <$type>::MIN < 0;
                 // Write then read numbers to disk to black box compiler
-                let vals = random_numbers(1000, min_digit..=max_digit, <$type>::MAX as u128);
+                let vals = random_numbers(1000, min_digit..=max_digit, <$type>::MAX as u128, neg);
                 write_numbers("data.txt", vals).unwrap();
                 let vals = read_numbers("data.txt").unwrap();
 
@@ -144,6 +160,12 @@ fn benchmark(c: &mut Criterion) {
     bench_integer_type!(c, u32);
     bench_integer_type!(c, u16);
     bench_integer_type!(c, u8);
+
+    bench_integer_type!(c, i8);
+    bench_integer_type!(c, i16);
+    bench_integer_type!(c, i32);
+    bench_integer_type!(c, i64);
+    bench_integer_type!(c, i128);
 }
 
 criterion_group!(bench, benchmark);
