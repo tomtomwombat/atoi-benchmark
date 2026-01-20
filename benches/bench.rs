@@ -134,7 +134,7 @@ macro_rules! bench_integer_type {
                         min_digit,
                         max_digit
                     ),
-                    |s| atoi_simd::parse::<$type>(s.as_bytes()).ok(),
+                    |s| atoi_simd::parse::<u64, true, true>(s.as_bytes()).ok(),
                     &vals,
                 );
 
@@ -155,7 +155,7 @@ macro_rules! bench_integer_type {
 }
 
 fn benchmark(c: &mut Criterion) {
-    bench_integer_type!(c, u128);
+    //bench_integer_type!(c, u128);
     bench_integer_type!(c, u64);
     bench_integer_type!(c, u32);
     bench_integer_type!(c, u16);
@@ -165,7 +165,7 @@ fn benchmark(c: &mut Criterion) {
     bench_integer_type!(c, i16);
     bench_integer_type!(c, i32);
     bench_integer_type!(c, i64);
-    bench_integer_type!(c, i128);
+    //bench_integer_type!(c, i128);
 }
 
 criterion_group!(bench, benchmark);

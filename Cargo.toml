@@ -9,7 +9,7 @@ edition = "2024"
 
 atoi = "2.0.0"
 lexical-core = "1.0.6"
-atoi_simd = "0.17.0"
+atoi_simd = "0.18.0"
 cetane = { path = "../cetane" }
 
 itoa = "1.0.17"

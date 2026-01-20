@@ -90,7 +90,7 @@ if __name__ == "__main__":
 
     plt.xlabel("Number of Digits")
     plt.ylabel("Parse Time (ns)")
-    plt.title("%s Parser Performance (Checked): Exactly N Digits" % num_type)
+    plt.title("%s Parser Performance: Exactly N Digits (Lower is Better)" % num_type)
     plt.legend(loc='upper left')
     plt.grid(True)
     # plt.tight_layout()
@@ -107,7 +107,7 @@ if __name__ == "__main__":
 
     plt.xlabel("Number of Digits [1..N]")
     plt.ylabel("Parse Time (ns)")
-    plt.title("%s Parser Performance (Checked): [1..N] Digit Range" % num_type)
+    plt.title("%s Parser Performance: [1..N] Digit Range (Lower is Better)" % num_type)
     plt.legend(loc='upper left')
     plt.grid(True)
     # plt.tight_layout()
